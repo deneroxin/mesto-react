@@ -4,12 +4,8 @@ import Header from './Header';
 import Main from './Main.js';
 import Footer from './Footer';
 import PopupWithForm from './PopupWithForm';
+import InputWithError from './InputWithError';
 import ImagePopup from './ImagePopup';
-
-const defaultText = {
-  'add-card': {name: '', link: ''},
-  'change-avatar': {avatar: ''}
-}
 
 export default function App() {
 
@@ -26,13 +22,13 @@ export default function App() {
   React.useEffect(() => {
     api.getUserInfo()
       .then(setUserData)
-      .catch(err => console.log(err));
+      .catch(err => console.log(`Api.getUserInfo() failed with: ${err.message}`));
     api.getInitialCards()
-    .then(res => {
-      res.sort(sortByRatingThenByName);
-      setCards(res);
-    })
-    .catch(err => console.log(err));
+      .then(res => {
+        res.sort(sortByRatingThenByName);
+        setCards(res);
+      })
+      .catch(err => console.log(`Api.getInitialCards() failed with: ${err.message}`));
   }, []);
 
   function sortByRatingThenByName(a, b) {
@@ -104,36 +100,56 @@ export default function App() {
       </div>
       <PopupWithForm
         name="edit-profile"
+        title="Редактировать профиль"
+        buttonText="Сохранить"
+        buttonRequestText="Сохранение"
         isOpen={isEditProfilePopupOpen}
-        initialText={userData}
         submitRequest={api.editProfile.bind(api)}
         submitCallback={setUserData}
         {...{handlePopupClose}}
-      />
+      >
+        <InputWithError name="name" type="text" placeholder="Имя" minLength="2" maxLength="40" required>
+          {userData && userData.name}
+        </InputWithError>
+        <InputWithError name="about" type="text" placeholder="О себе" minLength="2" maxLength="200" required>
+          {userData && userData.about}
+        </InputWithError>
+      </PopupWithForm>
       <PopupWithForm
         name="add-card"
+        title="Новое место"
+        buttonText="Создать"
+        buttonRequestText="Создание"
         isOpen={isAddCardPopupOpen}
-        initialText={defaultText['add-card']}
         submitRequest={api.addNewCard.bind(api)}
         submitCallback={handleAddCardSubmit}
         {...{handlePopupClose}}
-      />
+      >
+        <InputWithError name="name" type="text" placeholder="Название" minLength="2" maxLength="30" required />
+        <InputWithError name="link" type="url" placeholder="Ссылка на картиинку" required />
+      </PopupWithForm>
       <PopupWithForm
         name="change-avatar"
+        title="Обновить аватар"
+        buttonText="Сохранить"
+        buttonRequestText="Сохранение"
         isOpen={isChangeAvatarPopupOpen}
-        initialText={defaultText['change-avatar']}
         submitRequest={api.setAvatar.bind(api)}
         submitCallback={setUserData}
         {...{handlePopupClose}}
-      />
+      >
+        <InputWithError name="avatar" type="url" placeholder="Ссылка на фото" required />
+      </PopupWithForm>
       <PopupWithForm
         name="confirmation"
+        title="Вы уверены?"
+        buttonText="Да"
+        buttonRequestText="Удаление"
         isOpen={isConfirmationPopupOpen}
-        initialText={null}
         submitRequest={() => api.removeCard(cardToRemove.current.cardData)}
         submitCallback={handleCardRemove}
         {...{handlePopupClose}}
-      />
+      ></PopupWithForm>
       <ImagePopup
         card={selectedCard}
         isOpen={isImagePopupOpen}

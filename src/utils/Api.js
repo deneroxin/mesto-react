@@ -17,11 +17,7 @@ class Api {
       method: 'GET',
       headers: this._getHeaders
     })
-    .then(this._getData)
-    .catch(err => {
-      console.log(`Api.getUserInfo() failed with: ${err.message}`);
-      throw err;
-    });
+    .then(this._getData);
   }
 
   getInitialCards() {
@@ -29,11 +25,7 @@ class Api {
       method: 'GET',
       headers: this._getHeaders
     })
-    .then(this._getData)
-    .catch(err => {
-      console.log(`Api.getInitialCards() failed with: ${err.message}; empty array returned`);
-      return [];
-    });
+    .then(this._getData);
   }
 
   editProfile(newData) {
