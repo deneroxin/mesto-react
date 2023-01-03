@@ -1,0 +1,8 @@
+.interactive {
+  cursor: url(../../cursors/custom-pointer.png) 14 0, pointer;
+  transition: opacity .3s ease;
+}
+
+.interactive:hover {
+  opacity: 0.6;
+}

@@ -1,0 +1,5 @@
+.page {
+  margin: 0 auto;
+  width: calc(282px + (100vw - 320px) * (880 - 282) / (1023 - 320));
+  max-width: 880px;
+}
