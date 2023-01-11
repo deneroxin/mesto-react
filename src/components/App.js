@@ -9,11 +9,7 @@ import ImagePopup from './ImagePopup';
 
 export default function App() {
 
-  const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = React.useState(false);
-  const [isAddCardPopupOpen, setIsAddCardPopupOpen] = React.useState(false);
-  const [isChangeAvatarPopupOpen, setIsChangeAvatarPopupOpen] = React.useState(false);
-  const [isConfirmationPopupOpen, setIsConfirmationPopupOpen] = React.useState(false);
-  const [isImagePopupOpen, setIsImagePopupOpen] = React.useState(false);
+  const [currentPopup, setCurrentPopup] = React.useState(null);
   const [selectedCard, setSelectedCard] = React.useState(null);
   const [userData, setUserData] = React.useState(null);
   const [cards, setCards] = React.useState(null);
@@ -36,32 +32,13 @@ export default function App() {
     return (a.name < b.name ? -1 : (b.name < a.name) ? 1 : 0);
   }
 
-  function handleEditProfileClick() {
-    setIsEditProfilePopupOpen(true);
-  }
-
-  function handleAddClick() {
-    setIsAddCardPopupOpen(true);
-  }
-
-  function handleAvatarClick() {
-    setIsChangeAvatarPopupOpen(true);
-  }
-
   function handleCardClick(cardData) {
     setSelectedCard(cardData);
-    setIsImagePopupOpen(true);
+    setCurrentPopup('view-card');
   }
 
-  function handlePopupClose(popupName) {
-    ({
-      'edit-profile': setIsEditProfilePopupOpen,
-      'add-card': setIsAddCardPopupOpen,
-      'change-avatar': setIsChangeAvatarPopupOpen,
-      'confirmation': setIsConfirmationPopupOpen,
-      'view-card': setIsImagePopupOpen
-    })
-    [popupName](false);
+  function handlePopupClose() {
+    setCurrentPopup(null);
   }
 
   function handleAddCardSubmit(newCard) {
@@ -70,7 +47,7 @@ export default function App() {
 
   function handleCardRemoveClick(cardData, cardRemoveEffect) {
     cardToRemove.current = {cardData, cardRemoveEffect};
-    setIsConfirmationPopupOpen(true);
+    setCurrentPopup('confirmation');
   }
 
   function handleCardRemove() {
@@ -90,11 +67,7 @@ export default function App() {
             handleCardClick,
             handleCardRemoveClick
           }}
-          popupTriggers={{
-            handleEditProfileClick,
-            handleAddClick,
-            handleAvatarClick
-          }}
+          handleOpenPopup={setCurrentPopup}
         />
         <Footer />
       </div>
@@ -103,7 +76,7 @@ export default function App() {
         title="Редактировать профиль"
         buttonText="Сохранить"
         buttonRequestText="Сохранение"
-        isOpen={isEditProfilePopupOpen}
+        isOpen={currentPopup === 'edit-profile'}
         submitRequest={api.editProfile.bind(api)}
         submitCallback={setUserData}
         {...{handlePopupClose}}
@@ -120,7 +93,7 @@ export default function App() {
         title="Новое место"
         buttonText="Создать"
         buttonRequestText="Создание"
-        isOpen={isAddCardPopupOpen}
+        isOpen={currentPopup === 'add-card'}
         submitRequest={api.addNewCard.bind(api)}
         submitCallback={handleAddCardSubmit}
         {...{handlePopupClose}}
@@ -133,7 +106,7 @@ export default function App() {
         title="Обновить аватар"
         buttonText="Сохранить"
         buttonRequestText="Сохранение"
-        isOpen={isChangeAvatarPopupOpen}
+        isOpen={currentPopup === 'change-avatar'}
         submitRequest={api.setAvatar.bind(api)}
         submitCallback={setUserData}
         {...{handlePopupClose}}
@@ -145,14 +118,14 @@ export default function App() {
         title="Вы уверены?"
         buttonText="Да"
         buttonRequestText="Удаление"
-        isOpen={isConfirmationPopupOpen}
+        isOpen={currentPopup === 'confirmation'}
         submitRequest={() => api.removeCard(cardToRemove.current.cardData)}
         submitCallback={handleCardRemove}
         {...{handlePopupClose}}
       ></PopupWithForm>
       <ImagePopup
         card={selectedCard}
-        isOpen={isImagePopupOpen}
+        isOpen={currentPopup === 'view-card'}
         {...{handlePopupClose}}
       />
     </div>

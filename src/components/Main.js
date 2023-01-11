@@ -2,7 +2,7 @@ import React from 'react';
 import emptyIndicator from '../blocks/elements/__empty-indicator/elements__empty-indicator.jpg';
 import Card from './Card';
 
-export default function Main({userData, cards, cardHandlers, popupTriggers}) {
+export default function Main({userData, cards, cardHandlers, handleOpenPopup}) {
 
   // И [cards, setCards], и [userData, setUserData] пришлось перенести из Main в App,
   // потому что обработчики добавления и удаления карты, изменяющие массив карт, находятся там,
@@ -16,21 +16,21 @@ export default function Main({userData, cards, cardHandlers, popupTriggers}) {
         <section className="profile" aria-label="Профиль" hidden>
           <div className="profile__avatar"
             style={{backgroundImage: `url(${userData.avatar})`}}
-            onClick={popupTriggers.handleAvatarClick}>
+            onClick={() => handleOpenPopup('change-avatar')}>
           </div>
           <div className="profile__text-container">
             <div className="profile__name-container">
               <h1 className="profile__name">{userData.name}</h1>
               <button type="button" className="interactive profile__edit-button"
                 aria-label="Редактировать профиль"
-                onClick={popupTriggers.handleEditProfileClick}
+                onClick={() => handleOpenPopup('edit-profile')}
               ></button>
             </div>
             <p className="profile__about">{userData.about}</p>
           </div>
           <button type="button" className="interactive profile__add-button"
             aria-label="Добавить"
-            onClick={popupTriggers.handleAddClick}
+            onClick={() => handleOpenPopup('add-card')}
           ></button>
         </section>
       )}
