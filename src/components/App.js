@@ -1,23 +1,29 @@
 import React from 'react';
 import api from '../utils/Api';
+import {CurrentUserContext} from '../contexts/CurrentUserContext';
+import {PopupClosableContext} from '../contexts/PopupClosableContext';
 import Header from './Header';
 import Main from './Main.js';
 import Footer from './Footer';
-import PopupWithForm from './PopupWithForm';
-import InputWithError from './InputWithError';
+import EditProfilePopup from './EditProfilePopup';
+import EditAvatarPopup from './EditAvatarPopup';
+import AddPlacePopup from './AddPlacePopup';
+import ConfirmationPopup from './ConfirmationPopup';
 import ImagePopup from './ImagePopup';
+import PopupClosable from './PopupClosable';
 
 export default function App() {
 
-  const [currentPopup, setCurrentPopup] = React.useState(null);
-  const [selectedCard, setSelectedCard] = React.useState(null);
-  const [userData, setUserData] = React.useState(null);
+  const [currentUser, setCurrentUser] = React.useState(null);
   const [cards, setCards] = React.useState(null);
-  const cardToRemove = React.useRef(null);
+  const [currentPopup, setCurrentPopup] = React.useState(null);  // В каждый момент времени открыт только один попап. Это обусловлено тем, что обработчик клавиатуры (закрытие по Esc) цепляется глобально, что не даст нам возможности когда-либо задействовать несколько попапов.
+  const [selectedCard, setSelectedCard] = React.useState(null);
+  const cardToRemove = React.useRef(null);  // Здесь мы запоминаем данные карточки, которую собираемся удалить, а после подтверждения их используем
+  const popupClosable = React.useRef(PopupClosable(handlePopupClose)).current;  // Создаём "объект" интерфейса, управляющего закрытием всех попапов
 
   React.useEffect(() => {
     api.getUserInfo()
-      .then(setUserData)
+      .then(setCurrentUser)
       .catch(err => console.log(`Api.getUserInfo() failed with: ${err.message}`));
     api.getInitialCards()
       .then(res => {
@@ -41,8 +47,16 @@ export default function App() {
     setCurrentPopup(null);
   }
 
-  function handleAddCardSubmit(newCard) {
-    setCards(cards => [newCard, ...cards]);
+  function handleCardLike(cardData) {
+    const isLiked = cardData.likes.some(user => user._id == currentUser._id);
+    api.likeCard(!isLiked, cardData)
+      .then(updatedCard => setCards(
+          cards => cards.map(card => card == cardData ? updatedCard : card)
+        )
+      )
+      .catch(err => {
+        console.log(`Api.likeCard() failed with: ${err.message}`);
+      });
   }
 
   function handleCardRemoveClick(cardData, cardRemoveEffect) {
@@ -50,84 +64,65 @@ export default function App() {
     setCurrentPopup('confirmation');
   }
 
-  function handleCardRemove() {
+  // Все попапы обернуты в React.memo, чтобы ре-рендер не происходил всякий раз у всех.
+  // Вряд ли это увеличит производительность, учитывая накладки по вызову React.memo и React.useCallback,
+  // но мне хотелось протестировать такой вариант и увидеть, как это влияет на рендер.
+  // Поначалу вписал зависимости: cards, cardToRemove, из-за чего наблюдался ре-рендеринг попапов, зависящих от cards,
+  // но потом заметил, что должно работать и без них - по причинам, изложенным ниже - и рендеринг прекратился.
+
+  const handleAddCardSubmit = React.useCallback(newCard =>
+    setCards(cards => [newCard, ...cards])
+  , []); // Зависимостей нет, так как setCards использует отложенную установку значения, аргумент cards примет наиболее актуальное состояние.
+
+  const handleCardRemove = React.useCallback(() =>
     cardToRemove.current.cardRemoveEffect()
-    .then(() => setCards(cards => cards.filter(card => card != cardToRemove.current.cardData)));
-  }
+    .then(() => setCards(cards => cards.filter(card => card != cardToRemove.current.cardData)))
+  , []); // Зависимостей нет, так как setCards использует отложенную установку, а cardToRemove.current всегда вернёт актуальное значение
+
+  const confirmationRequest = React.useCallback(() =>
+    api.removeCard(cardToRemove.current.cardData)
+  , []); // Зависимостей нет, так как cardToRemove.current будет возвращать актуальное значение с момента создания Ref
 
   return (
-    <div className="entire-space">
-      <div className="page">
-        <Header />
-        <Main
-          {...{userData}}
-          {...{setUserData}}
-          {...{cards}}
-          cardHandlers={{
-            handleCardClick,
-            handleCardRemoveClick
-          }}
-          handleOpenPopup={setCurrentPopup}
-        />
-        <Footer />
+    <CurrentUserContext.Provider value={currentUser}>
+      <div className="entire-space">
+        <div className="page">
+          <Header />
+          <Main
+            {...{cards}}
+            cardHandlers={{
+              handleCardClick,
+              handleCardRemoveClick,
+              handleCardLike
+            }}
+            handleOpenPopup={setCurrentPopup}
+          />
+          <Footer />
+        </div>
+        <PopupClosableContext.Provider value={popupClosable}>
+          <EditProfilePopup
+            isOpen={currentPopup === 'edit-profile'}
+            submitCallback={setCurrentUser} //свойство называется submitCallback, так как это только часть обработчика submit
+          />
+          <AddPlacePopup
+            isOpen={currentPopup === 'add-card'}
+            submitCallback={handleAddCardSubmit}
+          />
+          <EditAvatarPopup
+            isOpen={currentPopup === 'change-avatar'}
+            submitCallback={setCurrentUser}
+          />
+          <ConfirmationPopup
+            isOpen={currentPopup === 'confirmation'}
+            submitRequest={confirmationRequest}
+            submitCallback={handleCardRemove}
+          />
+          <ImagePopup
+            isOpen={currentPopup === 'view-card'}
+            card={selectedCard}
+          />
+        </PopupClosableContext.Provider>
       </div>
-      <PopupWithForm
-        name="edit-profile"
-        title="Редактировать профиль"
-        buttonText="Сохранить"
-        buttonRequestText="Сохранение"
-        isOpen={currentPopup === 'edit-profile'}
-        submitRequest={api.editProfile.bind(api)}
-        submitCallback={setUserData}
-        {...{handlePopupClose}}
-      >
-        <InputWithError name="name" type="text" placeholder="Имя" minLength="2" maxLength="40" required>
-          {userData && userData.name}
-        </InputWithError>
-        <InputWithError name="about" type="text" placeholder="О себе" minLength="2" maxLength="200" required>
-          {userData && userData.about}
-        </InputWithError>
-      </PopupWithForm>
-      <PopupWithForm
-        name="add-card"
-        title="Новое место"
-        buttonText="Создать"
-        buttonRequestText="Создание"
-        isOpen={currentPopup === 'add-card'}
-        submitRequest={api.addNewCard.bind(api)}
-        submitCallback={handleAddCardSubmit}
-        {...{handlePopupClose}}
-      >
-        <InputWithError name="name" type="text" placeholder="Название" minLength="2" maxLength="30" required />
-        <InputWithError name="link" type="url" placeholder="Ссылка на картиинку" required />
-      </PopupWithForm>
-      <PopupWithForm
-        name="change-avatar"
-        title="Обновить аватар"
-        buttonText="Сохранить"
-        buttonRequestText="Сохранение"
-        isOpen={currentPopup === 'change-avatar'}
-        submitRequest={api.setAvatar.bind(api)}
-        submitCallback={setUserData}
-        {...{handlePopupClose}}
-      >
-        <InputWithError name="avatar" type="url" placeholder="Ссылка на фото" required />
-      </PopupWithForm>
-      <PopupWithForm
-        name="confirmation"
-        title="Вы уверены?"
-        buttonText="Да"
-        buttonRequestText="Удаление"
-        isOpen={currentPopup === 'confirmation'}
-        submitRequest={() => api.removeCard(cardToRemove.current.cardData)}
-        submitCallback={handleCardRemove}
-        {...{handlePopupClose}}
-      ></PopupWithForm>
-      <ImagePopup
-        card={selectedCard}
-        isOpen={currentPopup === 'view-card'}
-        {...{handlePopupClose}}
-      />
-    </div>
+    </CurrentUserContext.Provider>
   );
 }

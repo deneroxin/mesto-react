@@ -1,21 +1,24 @@
 import React from 'react';
+import {PopupWithFormContext} from '../contexts/PopupWithFormContext';
 
-export default function InputWithError({updatePopupData, shouldReset, children, ...inputProps}) {
+export default function InputWithError({children, ...inputProps}) {
+  //                                      ^---проп children содержит исходный текст для поля
 
   const [errorText, setErrorText] = React.useState('');
   const inputElement = React.useRef(null);
   const isValid = React.useRef(false);
+  const parentForm = React.useContext(PopupWithFormContext);
 
   React.useEffect(() => {
     inputElement.current.value = children ? children : '';
     validateInput();
     setErrorText('');
-  }, [shouldReset, children]);
+  }, [parentForm.shouldReset, children]);
 
   function validateInput() {
     const previousState = isValid.current;
     isValid.current = inputElement.current.checkValidity();
-    updatePopupData(
+    parentForm.updateOverallData(
       isValid.current != previousState,
       inputProps.name,
       isValid.current,

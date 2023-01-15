@@ -1,17 +1,13 @@
 import React from 'react';
-import PopupClosable from './PopupClosable';
+import {PopupClosableContext} from '../contexts/PopupClosableContext';
 
-export default function ImagePopup({card, isOpen, handlePopupClose}) {
+export default function ImagePopup({card, isOpen}) {
 
-  const popupClosable = React.useRef(PopupClosable(close)).current;
+  const popupClosable = React.useContext(PopupClosableContext);
 
   React.useEffect(() => {
-    popupClosable.manageKeyboardListener(isOpen);
+    if (isOpen) popupClosable.initialize();
   }, [isOpen]);
-
-  function close() {
-    handlePopupClose('view-card');
-  }
 
   return (
     <div

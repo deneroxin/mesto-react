@@ -1,17 +1,27 @@
-export default function PopupClosable(handlePopupClose) {
+// "Объект" интерфейса описан функцией, чтобы соответствовать
+// выбранной тенденции использовать функциональный подход при создании компонентов,
+// хотя на самом деле - просто лаконичнее получается запись (не загромождена префиксами this.)
+
+export default function PopupClosable(handleAnyPopupClose) {
 
   let mousePushedOnOverlay = false;
+  let handleClose = close;
 
   function handleKeyDown(evt) {
-    if (evt.key == 'Escape') handlePopupClose(false);
+    if (evt.key == 'Escape') handleClose(false);
   }
 
-  function manageKeyboardListener(isAttached) {
-    if (isAttached) {
-      document.addEventListener('keydown', handleKeyDown);
-    } else {
-      document.removeEventListener('keydown', handleKeyDown);
-    }
+  function initialize(handleThisPopupClose) {
+    if (handleThisPopupClose) handleClose = handleThisPopupClose;
+    document.addEventListener('keydown', handleKeyDown);
+  }
+
+  // !! handleThisPopupClose, передаваемый методу initialize,
+  // должен по завершении !обязательно! вызвать метод close() интерфейса:
+  function close() {
+    handleClose = close;
+    document.removeEventListener('keydown', handleKeyDown);
+    handleAnyPopupClose();
   }
 
   // Целью использования пары событий (mouseDown, mouseUp) вместо простого "click"
@@ -25,9 +35,9 @@ export default function PopupClosable(handlePopupClose) {
   }
 
   function handleMouseUp(evt) {
-    if (evt.target.classList.contains('popup-close') && mousePushedOnOverlay) handlePopupClose(false);
+    if (evt.target.classList.contains('popup-close') && mousePushedOnOverlay) handleClose(false);
     mousePushedOnOverlay = false;
   }
 
-  return { manageKeyboardListener, handleMouseDown, handleMouseUp }
+  return { initialize, handleMouseDown, handleMouseUp, close }
 }

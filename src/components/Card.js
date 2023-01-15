@@ -1,29 +1,14 @@
 import React from 'react';
-import api from '../utils/Api';
+import {CurrentUserContext} from '../contexts/CurrentUserContext';
 import fallbackImage from '../blocks/card/__image/card__image-fallback.jpg';
 
-export default function Card({cardData, myID, cardHandlers}) {
+export default function Card({cardData, cardHandlers}) {
 
-  const [likes, setLikes] = React.useState(cardData.likes);
-  const likeStatus = React.useRef(null);
-  const cardElement = React.useRef(null);
-
-  function isMine() {
-    return cardData.owner._id == myID;
-  }
-
-  function isLiked() {
-    likeStatus.current = likes.some(user => user._id == myID);
-    return likeStatus.current;
-  }
-
-  function getNumLikes() {
-    return likes.length;
-  }
-
-  function buildURL()  {
-    return `url(${cardData.link}), url(${fallbackImage})`;
-  }
+  const cardElement = React.useRef(null); // Используется, чтобы прицепить эффект удаления на карточку
+  const myID = React.useContext(CurrentUserContext)._id;
+  const isLiked = cardData.likes.some(user => user._id == myID);
+  const numLikes = cardData.likes.length;
+  const isMine = cardData.owner._id == myID;
 
   function handleClick() {
     cardHandlers.handleCardClick(cardData);
@@ -38,30 +23,23 @@ export default function Card({cardData, myID, cardHandlers}) {
     return new Promise(resolve => {
       cardElement.current.classList.add('card_removed');
       const style = window.getComputedStyle(cardElement.current);
-      const transDur = style.getPropertyValue('transition-duration');
-      const durSec = Number(transDur.slice(0, transDur.indexOf('s')));
-      setTimeout(resolve, durSec * 1000);
+      const transDurSec = parseFloat(style.getPropertyValue('transition-duration'));
+      setTimeout(resolve, transDurSec * 1000);
     });
   }
 
-  function handleLike() {
-    api.likeCard(!likeStatus.current, cardData)
-    .then(updatedCard => {
-        if (updatedCard) setLikes(updatedCard.likes);
-    })
-    .catch(err => {
-      console.log(`Api.likeCard() failed with: ${err.message}`);
-    });
+  function handleLikeClick() {
+    cardHandlers.handleCardLike(cardData);
   }
 
   return (
     <li className="card" ref={cardElement}>
       <div
         className="card__image"
-        style={{backgroundImage: buildURL()}}
+        style={{backgroundImage: `url(${cardData.link}), url(${fallbackImage})`}}
         onClick={handleClick}
       >
-        { isMine() && (
+        { isMine && (
           <button type="button"
             className="interactive card__remove-button"
             aria-label="Удалить место"
@@ -72,11 +50,11 @@ export default function Card({cardData, myID, cardHandlers}) {
       <div className="card__footer">
         <h2 className="card__subscript">{cardData.name}</h2>
         <button type="button"
-          className={`interactive card__like-button ${isLiked() ? 'card__like-button_active' : ''}`}
+          className={`interactive card__like-button ${isLiked ? 'card__like-button_active' : ''}`}
           aria-label="Поставить лайк"
-          onClick={handleLike}
+          onClick={handleLikeClick}
         ></button>
-        <p className="card__num-likes">{getNumLikes()}</p>
+        <p className="card__num-likes">{numLikes}</p>
       </div>
     </li>
   )
