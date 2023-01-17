@@ -41,9 +41,9 @@ export default function PopupWithForm({
     return Object.values(validationState).every(value => value);
   }
 
-  function updateOverallData(errorStateChanged, inputName, validationResult, inputContent) {
+  function updateOverallData(inputName, validationResult, inputContent) {
     inputsContent[inputName] = inputContent;
-    if (errorStateChanged) {
+    if (validationResult != validationState[inputName]) {
       validationState[inputName] = validationResult;
       setSubmitButtonAvailable(isFormValid());
     }
@@ -71,10 +71,10 @@ export default function PopupWithForm({
   // С помощью этой функции можно убедиться,
   // что при изменении содержимого любого из полей,
   // ре-рендеринга всех полей не происходит:
-  function rchildren() {
-    console.log(`Popup "${name}" renders its inputs!`);
-    return children;
-  }
+  // function rchildren() {
+  //   console.log(`Popup "${name}" renders its inputs!`);
+  //   return children;
+  // }
 
   return (
     <div
@@ -86,7 +86,7 @@ export default function PopupWithForm({
         <h2 className="popup__title">{ title }</h2>
         <form className="popup__form" name={name} noValidate onSubmit={handleFormSubmit}>
           <PopupWithFormContext.Provider value={{shouldReset, updateOverallData}}>
-            { rchildren() }
+            { children }
           </PopupWithFormContext.Provider>
           <button type="submit"
             className={`interactive popup__confirm-button ${submitButtonAvailable ? '' : 'popup__confirm-button_disabled'}`}

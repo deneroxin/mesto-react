@@ -14,7 +14,7 @@ export default function InputWithErrorControlled({children, ...inputProps}) {
   // где нам уже не будет доступен evt.target, поэтому нужна ссылка на фактический DOM-элемент -
   // ведь браузерная валидация основывается на фактическом содержимом элемента разметки.
 
-  const [value, setValue] = React.useState();
+  const [value, setValue] = React.useState('');
   const [errorText, setErrorText] = React.useState('');
   const neverTouched = React.useRef(true); // кроме этого пришлось ввести дополнительное свойство, чтобы при первичном открытии окна ошибки не выскакивали
   const inputElement = React.useRef(null); // ссылку придётся оставить, так как валидация будет происходить не только при вводе текста, но и при вставке значения явно, а в этом случае evt.target у нас не будет
