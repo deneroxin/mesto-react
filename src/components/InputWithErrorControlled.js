@@ -18,7 +18,6 @@ export default function InputWithErrorControlled({children, ...inputProps}) {
   const [errorText, setErrorText] = React.useState('');
   const neverTouched = React.useRef(true); // кроме этого пришлось ввести дополнительное свойство, чтобы при первичном открытии окна ошибки не выскакивали
   const inputElement = React.useRef(null); // ссылку придётся оставить, так как валидация будет происходить не только при вводе текста, но и при вставке значения явно, а в этом случае evt.target у нас не будет
-  const isValid = React.useRef(false);
   const parentForm = React.useContext(PopupWithFormContext);
 
   React.useEffect(validateInput, [value]); // т.к. эффект вызывается после рендеринга, можно полагаться на то, что DOM-элементы уже содержат обновлённый текст, и валидация даст корректные результаты
@@ -29,13 +28,10 @@ export default function InputWithErrorControlled({children, ...inputProps}) {
   }, [parentForm.shouldReset, children]);
 
   function validateInput() {
-    const previousState = isValid.current;
-    isValid.current = inputElement.current.checkValidity();
     setErrorText(neverTouched.current ? '' : inputElement.current.validationMessage);
     parentForm.updateOverallData(
-      isValid.current != previousState,
       inputProps.name,
-      isValid.current,
+      inputElement.current.checkValidity(),
       inputElement.current.value
     );
   }

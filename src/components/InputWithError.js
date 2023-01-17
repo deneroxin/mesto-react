@@ -6,7 +6,6 @@ export default function InputWithError({children, ...inputProps}) {
 
   const [errorText, setErrorText] = React.useState('');
   const inputElement = React.useRef(null);
-  const isValid = React.useRef(false);
   const parentForm = React.useContext(PopupWithFormContext);
 
   React.useEffect(() => {
@@ -16,12 +15,9 @@ export default function InputWithError({children, ...inputProps}) {
   }, [parentForm.shouldReset, children]);
 
   function validateInput() {
-    const previousState = isValid.current;
-    isValid.current = inputElement.current.checkValidity();
     parentForm.updateOverallData(
-      isValid.current != previousState,
       inputProps.name,
-      isValid.current,
+      inputElement.current.checkValidity(),
       inputElement.current.value
     );
   }
